@@ -14,7 +14,12 @@ ci = rng.integers(0, len(centers), N)
 XB = (centers[ci] + 0.05 * rng.normal(size=(N, D)).astype(np.float32)).astype(np.float32)
 qi = rng.integers(0, len(centers), NQ)
 XQ = (centers[qi] + 0.05 * rng.normal(size=(NQ, D)).astype(np.float32)).astype(np.float32)
-gt = np.argpartition(((XQ[:, None, :] - XB[None, :, :]) ** 2).sum(axis=2), 10, axis=1)[:, :10]
+gt = np.empty((NQ, 10), dtype=np.int64)
+xb2 = (XB ** 2).sum(axis=1)
+for a in range(0, NQ, 250):
+    b = min(a + 250, NQ)
+    d2 = (XQ[a:b] ** 2).sum(axis=1)[:, None] + xb2[None, :] - 2.0 * (XQ[a:b] @ XB.T)
+    gt[a:b] = np.argpartition(d2, 10, axis=1)[:, :10]
 
 M, EF_C, EF_S = 16, 200, 128
 t0 = time.time()
