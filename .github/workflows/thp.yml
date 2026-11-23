@@ -1,0 +1,26 @@
+name: thp-probe
+on:
+  workflow_dispatch:
+    inputs:
+      thp:
+        description: 'THP mode for both arms'
+        required: true
+        default: 'always-vs-never'
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: deps
+        run: pip install hnswlib numpy h5py
+      - name: bench THP=always
+        run: |
+          echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+          echo always | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
+          python thp_probe.py
+      - name: bench THP=never
+        run: |
+          echo never | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+          python thp_probe.py
