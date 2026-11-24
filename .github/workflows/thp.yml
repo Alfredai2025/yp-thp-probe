@@ -1,11 +1,6 @@
 name: thp-probe
 on:
   workflow_dispatch:
-    inputs:
-      thp:
-        description: 'THP mode for both arms'
-        required: true
-        default: 'always-vs-never'
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -15,12 +10,24 @@ jobs:
         with: { python-version: '3.12' }
       - name: deps
         run: pip install hnswlib numpy h5py
+      - name: cpu model
+        run: lscpu | tee cpu-model.txt
       - name: bench THP=always
         run: |
+          set -o pipefail
           echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
           echo always | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
-          python thp_probe.py
+          python thp_probe.py 2>&1 | tee log-thp-always.txt
       - name: bench THP=never
         run: |
+          set -o pipefail
           echo never | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
-          python thp_probe.py
+          python thp_probe.py 2>&1 | tee log-thp-never.txt
+      - name: archive run logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: thp-run-logs
+          path: |
+            log-thp-always.txt
+            log-thp-never.txt
+            cpu-model.txt
